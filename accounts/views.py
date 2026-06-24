@@ -1,16 +1,68 @@
-from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView, CreateAPIView
+from rest_framework.generics import (
+    ListCreateAPIView, 
+    RetrieveUpdateDestroyAPIView, 
+    CreateAPIView
+)
 from .models import User
-from .serializers import UserSerializer, RegisterSerializer
-from django.shortcuts import get_list_or_404, get_object_or_404
+from .serializers import UserSerializer, RegisterSerializer, LoginSerializer
+from django.contrib.auth import login, logout
+from rest_framework.response import Response
+from rest_framework.views import APIView
+from rest_framework import status
+from rest_framework import permissions
+from .permissions import (
+    IsOwnerOrReadOnly,
+)
+
+class CurrentView(RetrieveUpdateDestroyAPIView):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = UserSerializer
+    
+    def get_object(self):
+        return self.request.user
+
 
 class UserListView(ListCreateAPIView):
+    # permission_classes = [permissions.IsAdminUser]
     queryset = User.objects.all()
     serializer_class = UserSerializer
+
 
 class UserDetail(RetrieveUpdateDestroyAPIView):
+    permission_classes = [IsOwnerOrReadOnly]
     queryset = User.objects.all()
     serializer_class = UserSerializer
 
+
+class LoginView(CreateAPIView):
+    permission_classes = [permissions.AllowAny]
+
+    serializer_class = LoginSerializer
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        
+        user = serializer.validated_data['user']
+        
+        login(request, user)
+        
+        return Response({
+            "message": "لاگین با موفقیت انجام شد.",
+            "username": user.username
+        }, status=status.HTTP_200_OK)
+    
+
+class LogoutView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        logout(request)
+        return Response({"message": "خروج موفقیت‌آمیز"}, status=status.HTTP_200_OK)
+
+
 class RegisterView(CreateAPIView):
+    permission_classes = [permissions.AllowAny]
+
     queryset = User.objects.all()
     serializer_class = RegisterSerializer

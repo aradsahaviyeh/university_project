@@ -15,6 +15,7 @@ class User(AbstractUser):
     avatar = models.ImageField(upload_to='avatars/', default='avatars/default.png', blank=True)
     is_online = models.BooleanField(default=False)
     private_account = models.BooleanField(default=True)
+    last_seen = models.DateTimeField(null=True, blank=True)
 
     
     def __str__(self):

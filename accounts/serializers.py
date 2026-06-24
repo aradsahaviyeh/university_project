@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from django.contrib.auth import authenticate
 from .models import User
 import secrets
 
@@ -22,7 +23,24 @@ class UserSerializer(serializers.ModelSerializer):
         read_only_fields = ['id','is_online','last_login']
 
 
+class LoginSerializer(serializers.Serializer):
+    username = serializers.CharField()
+    password = serializers.CharField(write_only=True)
 
+    def validate(self, data):
+        username = data.get('username')
+        password = data.get('password')
+
+        if username and password:
+            user = authenticate(username=username, password=password)
+            if not user:
+                raise serializers.ValidationError("نام کاربری یا رمز عبور اشتباه است.")
+        else:
+            raise serializers.ValidationError("نام کاربری و رمز عبور الزامی است .")
+
+        data['user'] = user
+        return data
+ 
 
 class RegisterSerializer(serializers.ModelSerializer):
     class Meta:

@@ -1,4 +1,5 @@
 from django.db import models
+from django.db.models import Q, F
 from accounts.models import User
 import uuid
 
@@ -20,6 +21,7 @@ class PrivateChat(models.Model):
     )
     last_message = models.ForeignKey('PrivateMessage', on_delete=models.SET_NULL, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         constraints = [
@@ -28,7 +30,6 @@ class PrivateChat(models.Model):
                 name='unique_private_chat'
             )
         ]
-
     def __str__(self):
         return f'{self.user1} and {self.user2} in chat.' 
     
@@ -52,7 +53,7 @@ class PrivateMessage(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return f'{self.sender.username} sent message.'
+        return f'{self.sender.username} sent message. in {self.chat}'
 
 
 class PrivateAttachment(models.Model):
@@ -75,21 +76,3 @@ class PrivateAttachment(models.Model):
     def __str__(self):
         return f'Attachment for {self.message.id} ({self.file_type})'
     
-
-class PrivateNotification(models.Model):
-    id = models.UUIDField(default=uuid.uuid4, primary_key=True, editable=False)
-    receiver = models.ForeignKey(
-        User,
-        on_delete=models.CASCADE,
-        related_name='notifications'
-    )
-    message = models.ForeignKey(
-        PrivateMessage,
-        on_delete=models.CASCADE,
-        related_name='notifications'
-    )
-    created_at = models.DateTimeField(auto_now_add=True)
-    is_seen = models.BooleanField(default=False)
-
-    def __str__(self):
-        return f'{self.receiver} has a notification from this chat : {self.message.chat}'
