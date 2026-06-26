@@ -53,7 +53,7 @@ class PrivateMessage(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return f'{self.sender.username} sent message. in {self.chat}'
+        return f'{self.sender.username} sent message. {self.content}'
 
 
 class PrivateAttachment(models.Model):

@@ -16,13 +16,12 @@ class PrivateAttachmentSeriailizer(serializers.ModelSerializer):
 
 
 class PrivateMessageSerializer(serializers.ModelSerializer):
-
-
     sender_username = serializers.CharField(
         source='sender.username',
         read_only=True
     )
-    attachments = PrivateAttachmentSeriailizer(many=True)
+    attachments = PrivateAttachmentSeriailizer(many=True, read_only=True)
+
     class Meta:
         model = PrivateMessage
         fields = (
@@ -37,6 +36,7 @@ class PrivateMessageSerializer(serializers.ModelSerializer):
             'updated_at',
             'created_at'
         )
+        read_only_fields = ['id', 'sender', 'is_read', 'is_updated', 'created_at', 'updated_at']
 
 
 class PrivateMessageDetailSerializer(serializers.ModelSerializer):
@@ -67,14 +67,15 @@ class SendMessageSerializer(serializers.ModelSerializer):
     class Meta:
         model = PrivateMessage
         fields = (
+            'id',  # اضافه کردن id
             'chat',
             'sender',
             'content'
         )
+        read_only_fields = ['id']  # id فقط خواندنی
 
 
 class PrivateChatSerializer(serializers.ModelSerializer):
-    id = serializers.HyperlinkedIdentityField(view_name='chat_detail')
 
     user1_username = serializers.CharField(source='user1.username', read_only=True)
     user2_username = serializers.CharField(source='user2.username', read_only=True)
@@ -83,6 +84,8 @@ class PrivateChatSerializer(serializers.ModelSerializer):
     other_user_name = serializers.SerializerMethodField()
 
     unread_count = serializers.SerializerMethodField()
+
+    last_message = serializers.SerializerMethodField()
 
     class Meta:
         model = PrivateChat
@@ -135,6 +138,11 @@ class PrivateChatSerializer(serializers.ModelSerializer):
         ).exclude(
             sender=request.user
         ).count()
+    
+    def get_last_message(self, obj):
+        if obj.last_message:
+            return obj.last_message.content
+        return None
 
 
 class PrivateChatDetailSerializer(serializers.ModelSerializer):
@@ -199,7 +207,7 @@ class PrivateChatDetailSerializer(serializers.ModelSerializer):
     
 
     def get_messages(self, obj):
-        messages = obj.messages.all().order_by("-created_at")
+        messages = obj.messages.all().order_by("created_at")
 
         return PrivateMessageSerializer(
             messages,

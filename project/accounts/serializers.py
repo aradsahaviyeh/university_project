@@ -24,22 +24,23 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class LoginSerializer(serializers.Serializer):
-    username = serializers.CharField()
-    password = serializers.CharField(write_only=True)
+    username = serializers.CharField(required=True)
+    password = serializers.CharField(write_only=True, required=True, style={'input_type': 'password'})
 
     def validate(self, data):
         username = data.get('username')
         password = data.get('password')
 
-        if username and password:
-            user = authenticate(username=username, password=password)
-            if not user:
-                raise serializers.ValidationError("نام کاربری یا رمز عبور اشتباه است.")
-        else:
-            raise serializers.ValidationError("نام کاربری و رمز عبور الزامی است .")
+        user = authenticate(username=username, password=password)
 
-        data['user'] = user
-        return data
+        if user:
+            if not user.is_active:
+                raise serializers.ValidationError("این حساب کاربری غیرفعال است.")
+            
+            data['user'] = user
+            return data
+        
+        raise serializers.ValidationError("نام کاربری یا رمز عبور اشتباه است.")
  
 
 class RegisterSerializer(serializers.ModelSerializer):

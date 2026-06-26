@@ -5,7 +5,7 @@ from rest_framework.generics import (
 )
 from .models import User
 from .serializers import UserSerializer, RegisterSerializer, LoginSerializer
-from django.contrib.auth import login, logout
+from django.contrib.auth import login, logout, authenticate
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework import status
@@ -23,7 +23,7 @@ class CurrentView(RetrieveUpdateDestroyAPIView):
 
 
 class UserListView(ListCreateAPIView):
-    # permission_classes = [permissions.IsAdminUser]
+    permission_classes = [permissions.AllowAny]
     queryset = User.objects.all()
     serializer_class = UserSerializer
 
@@ -34,23 +34,15 @@ class UserDetail(RetrieveUpdateDestroyAPIView):
     serializer_class = UserSerializer
 
 
-class LoginView(CreateAPIView):
-    permission_classes = [permissions.AllowAny]
-
-    serializer_class = LoginSerializer
-
-    def create(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
+class LoginView(APIView):
+    def post(self, request):
+        serializer = LoginSerializer(data=request.data)
+        if serializer.is_valid():
+            # لاگین کردن کاربر در سشن جنگو
+            login(request, serializer.validated_data['user'])
+            return Response({"message": "با موفقیت وارد شدید"}, status=status.HTTP_200_OK)
         
-        user = serializer.validated_data['user']
-        
-        login(request, user)
-        
-        return Response({
-            "message": "لاگین با موفقیت انجام شد.",
-            "username": user.username
-        }, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
 
 class LogoutView(APIView):
